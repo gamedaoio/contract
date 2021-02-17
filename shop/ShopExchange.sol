@@ -11,11 +11,11 @@ abstract contract ShopExchange is Shop {
     using UInteger for uint256;
 
     uint256[] public rarityAmounts = [
-        10**18 * 1,
-        10**18 * 2,
-        10**18 * 4,
-        10**18 * 8,
-        10**18 * 16
+        10**17 * 75,
+        10**18 * 15,
+        10**18 * 30,
+        10**18 * 60,
+        10**18 * 120
     ];
 
     function getRarityAmounts() public view returns (uint256[] memory) {
