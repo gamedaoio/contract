@@ -13,6 +13,8 @@ abstract contract MortgageBase is Member {
     uint256 public perReward;
     uint256 public mortgageNumber = 0;
 
+    address public fundAddr;
+
     int256 public mortgageMax = 10**30;
 
     mapping(address => int256) public mortgageAmounts;
@@ -32,6 +34,14 @@ abstract contract MortgageBase is Member {
         totalDuration = _duration;
         totalReward = _reward;
         perReward = _perReward;
+    }
+
+    function setTimeStart(uint256 _startTime) external CheckPermit("Config") {
+        startTime = _startTime;
+    }
+
+    function setFundAddr(address addr) external CheckPermit("Config") {
+        fundAddr = addr;
     }
 
     function setMortgageMax(int256 max) external CheckPermit("Config") {
@@ -107,13 +117,23 @@ abstract contract MortgageBase is Member {
         uint256 lasttime = mortgageTimes[owner];
         if (lasttime > 0 && totalAmount > 0) {
             uint256 t = _now - lasttime;
+            int256 _perReward = int256(perReward);
+
             if (_now > startTime + totalDuration) {
                 t = startTime + totalDuration - lasttime;
+
+                if (totalAdjust > int256(totalReward)) {
+                    _perReward = 0;
+                } else {
+                    _perReward =
+                        (int256(totalReward) - totalAdjust) /
+                        int256(totalDuration);
+                }
             }
 
             int256 adjust =
                 int256(t) *
-                    ((int256(perReward) * _amount) / totalAmount) *
+                    ((int256(_perReward) * _amount) / totalAmount) *
                     int256(ratio);
             mortgageAdjusts[owner] += adjust;
             totalAdjust += adjust;
@@ -146,13 +166,23 @@ abstract contract MortgageBase is Member {
         uint256 lasttime = mortgageTimes[owner];
         if (lasttime > 0) {
             uint256 t = _now - lasttime;
+            int256 _perReward = int256(perReward);
+
             if (_now > startTime + totalDuration) {
                 t = startTime + totalDuration - lasttime;
+
+                if (totalAdjust > int256(totalReward)) {
+                    _perReward = 0;
+                } else {
+                    _perReward =
+                        (int256(totalReward) - totalAdjust) /
+                        int256(totalDuration);
+                }
             }
 
             int256 _adjust =
                 int256(t) *
-                    ((int256(perReward) * amount) / totalAmount) *
+                    ((_perReward * amount) / totalAmount) *
                     int256(ratio);
 
             mortgageAdjusts[owner] += _adjust;
@@ -161,16 +191,6 @@ abstract contract MortgageBase is Member {
         }
 
         return mortgageAdjusts[owner];
-
-        //     if (_now < startTime + totalDuration) {
-        //         reward =
-        //             int256((totalReward * (_now - startTime)) / totalDuration) +
-        //             totalAdjust;
-        //     } else {
-        //         reward = int256(totalReward) + totalAdjust;
-        //     }
-
-        //     return (reward * amount) / totalAmount - adjust;
     }
 
     function _withdraw(uint256 ratio) internal returns (uint256) {
